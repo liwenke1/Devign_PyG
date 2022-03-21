@@ -13,7 +13,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--raw_data', type=str, help='Input Directory of the parser',
-                        default='/home/survey_devign/survey_data_preprocess')
+                        default='/home/survey_devign/explain_experiments/all_files.txt')
     parser.add_argument('--pro_data_dir', type=str, help='Input Directory of the parser',
                         default='/home/Devign_PyG/dataset')
     parser.add_argument('--model_dir', type=str, help='Input Directory of the parser',
@@ -31,6 +31,7 @@ def parse_args():
 
 if __name__ == '__main__':
     Mylogger = Mylogging()
+    Mylogger.debug('-----Start-----')
     torch.manual_seed(22)
     args = parse_args()
 
@@ -43,8 +44,8 @@ if __name__ == '__main__':
     Mylogger.info('#' * 100)
     loss_function = BCELoss(reduction='sum')
     optim = Adam(model.parameters(), lr=0.0001, weight_decay=0.001)
-    Mylogger.info('batch_size:{args.batch_size}')
+    Mylogger.info(f'batch_size:{args.batch_size}')
     Mylogger.info('lr:0.0001')
     Mylogger.info('weight_decay:0.001')
-    train(model=model, dataset=dataset, loss_function=loss_function, 
-            optimizer=optim, save_path=args.model_dir + '/-batch-' + args.batch_size, epochs=args.epochs) 
+    train(model=model, dataset=loader, loss_function=loss_function, 
+            optimizer=optim, save_path=args.model_dir + '/batch-' + str(args.batch_size), epochs=args.epochs) 

@@ -1,10 +1,12 @@
 import logging
-from main import Mylogger
+from log import Mylogging
 
 import numpy as np
 import torch
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
 from tqdm import tqdm
+
+Mylogger = Mylogging()
 
 def save_model(model, f1, acc, save_path):
     with open(save_path + '-acc' + acc + '-f1' + f1 + '.ckpt', 'wb') as f:
@@ -16,10 +18,9 @@ def evaluate_loss(model, loss_function, dataset):
     with torch.no_grad():
         _loss = []
         all_predictions, all_targets = [], []
-        for data in dataset:
-            data = data.cuda()
+        for data in tqdm(dataset):
             predictions = model(data)
-            loss = loss_function(predictions, data.y)
+            loss = loss_function(predictions, data.y.cuda())
             _loss.append(loss.detach().cpu().item())
             predictions = predictions.detach().cpu()
             if predictions.ndim == 2:
@@ -34,7 +35,7 @@ def evaluate_loss(model, loss_function, dataset):
         loss = np.mean(_loss).item()
         f1 = f1_score(all_targets, all_predictions) * 100
         acc = accuracy_score(all_targets, all_predictions) * 100
-        Mylogger.info('Evaluate Vaild Dataset: loss:{loss}, accuracy:{acc}, f1:{f1}')
+        Mylogger.info(f'Evaluate Vaild Dataset: loss:{loss}, accuracy:{acc}, f1:{f1}')
         return loss, f1, acc
 
 
@@ -44,10 +45,9 @@ def evaluate_metrics(model, loss_function, dataset):
     with torch.no_grad():
         _loss = []
         all_predictions, all_targets = [], []
-        for data in dataset:
-            data = data.cuda()
+        for data in tqdm(dataset):
             predictions = model(data)
-            loss = loss_function(predictions, data.y)
+            loss = loss_function(predictions, data.y.cuda())
             _loss.append(loss.detach().cpu().item())
             predictions = predictions.detach().cpu()
             if predictions.ndim == 2:
@@ -63,7 +63,7 @@ def evaluate_metrics(model, loss_function, dataset):
         pre = precision_score(all_targets, all_predictions) * 100
         recall = recall_score(all_targets, all_predictions) * 100
         f1 = f1_score(all_targets, all_predictions) * 100
-        Mylogger.info('Evaluate In Test Dataset: accuracy:{acc}, precision:{pre}, recall:{recall}, f1:{f1}')
+        Mylogger.info(f'Evaluate In Test Dataset: accuracy:{acc}, precision:{pre}, recall:{recall}, f1:{f1}')
         return acc , pre, recall, f1
 
 
@@ -73,16 +73,17 @@ def train(model, dataset, loss_function, optimizer, save_path, epochs):
     model.cuda()
     for _ in range(epochs):
         model.train()
-        for data in tqdm(dataset['train']):
-            predict = model(data.cuda())
-            loss = loss_function(predict, data.y)
+        train_data = dataset['train'].dataset
+        for data in tqdm(dataset['train'].dataset):
+            predict = model(data)
+            loss = loss_function(predict, data.y.cuda())
             loss.backward()
             optimizer.step()
 
-        _ , f1, acc = evaluate_loss(model, loss_function, dataset['vaild'])
-        with open(save_path + '-acc-' + acc + '-f1-' + f1 + 'model.ckpt', 'wb') as f:
+        _ , f1, acc = evaluate_loss(model, loss_function, dataset['vaild'].dataset)
+        with open(save_path + '-acc-' + str(acc) + '-f1-' + str(f1) + 'model.ckpt', 'wb') as f:
             torch.save(model.state_dict(), f)
 
-    _ , f1 , acc = evaluate_metrics(model, loss_function, dataset['test'])
-    with open(save_path + '-acc' + acc + '-f1' + f1 + '-lastmodel.ckpt', 'wb') as f:
+    acc, pre, recall, f1 = evaluate_metrics(model, loss_function, dataset['test'].dataset)
+    with open(save_path + '-acc-' + str(acc) + '-f1-' + str(f1) + '-lastmodel.ckpt', 'wb') as f:
         torch.save(model.state_dict(), f)

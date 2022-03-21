@@ -1,15 +1,17 @@
 import json
-from main import Mylogger
 
 import torch
+from log import Mylogging
 from torch_geometric.data import Data, InMemoryDataset, DataLoader
 from torch.utils.data import random_split
+
+Mylogger = Mylogging()
 
 def read_json(filename):
     with open(filename,'r') as f:
         file = json.load(f)
 
-    x = torch.tensor(file['node_features'],dtype=torch.float64)
+    x = torch.tensor(file['node_features'],dtype=torch.float)
 
     edge_index_list = []
     for edge in file['graph']:
@@ -19,11 +21,11 @@ def read_json(filename):
     edge_attr_list = []
     for edge in file['graph']:
         edge_attr_list.append([edge[1]])
-    edge_attr = torch.tensor(edge_attr_list)
+    edge_attr = torch.tensor(edge_attr_list,dtype=torch.float)
 
     y=[]
     y.append([file['target']])
-    y=torch.tensor(y)
+    y=torch.tensor(y,dtype=torch.float)
     
     data=Data(x=x,edge_index=edge_index,edge_attr=edge_attr,y=y,name=filename)
     return data
@@ -62,7 +64,7 @@ class Devign(InMemoryDataset):
 
     def process(self):
         data_list = []
-        with open(self.raw_data_path,'r') as f:
+        with open('/home/survey_devign/explain_experiments/all_files.txt','r') as f:
             dataset_path = f.readlines()
         for path in dataset_path:
             data = read_json(path.strip())

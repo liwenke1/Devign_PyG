@@ -1,5 +1,5 @@
 import torch
-from torch_geometric.nn.conv import GatedGraphConv
+from torch_geometric.nn import GatedGraphConv
 from torch import nn
 import torch.nn.functional as f
 
@@ -30,16 +30,19 @@ class DevignModel(nn.Module):
         self.mlp_y = nn.Linear(in_features=output_dim, out_features=1)
         self.sigmoid = nn.Sigmoid()
 
-    def forward(self, batch, cuda=False):
-        graph, features, edge_types = batch.get_network_inputs(cuda=cuda)
-        graph = graph.to(torch.device("cuda:0"))
-        features = features.to(torch.device("cuda:0"))
-        edge_types = edge_types.to(torch.device("cuda:0"))
-        outputs = self.ggnn(graph, features, edge_types)
-        x_i, _ = batch.de_batchify_graphs(features)
-        h_i, _ = batch.de_batchify_graphs(outputs)
+    def de_batchify_graphs(self, features=None):
+        vectors = [torch.tensor(1)]
+        vectors[0] = features.clone().requires_grad_(True)
+        output_vectors = torch.stack(vectors)
+
+        return output_vectors
+
+    def forward(self, input):
+        x, edge_index, edge_types = input.x.cuda(), input.edge_index.cuda(), input.edge_attr.cuda()
+        output = self.ggnn(x, edge_index, edge_types)
+        x_i = self.de_batchify_graphs(x)
+        h_i = self.de_batchify_graphs(output)
         c_i = torch.cat((h_i, x_i), dim=-1)
-        batch_size, num_node, _ = c_i.size()
         Y_1 = self.maxpool1(
             f.relu(
                 self.batchnorm_1d(
