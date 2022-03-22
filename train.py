@@ -1,3 +1,4 @@
+import os
 import logging
 from log import Mylogging
 
@@ -67,23 +68,26 @@ def evaluate_metrics(model, loss_function, dataset):
         return acc , pre, recall, f1
 
 
-def train(model, dataset, loss_function, optimizer, save_path, epochs):
+def train(model, dataset, loss_function, optimizer, args, save_path, epochs):
     Mylogger.info('Start Training')
 
     model.cuda()
     for _ in range(epochs):
         model.train()
-        train_data = dataset['train'].dataset
-        for data in tqdm(dataset['train'].dataset):
-            predict = model(data)
-            loss = loss_function(predict, data.y.cuda())
-            loss.backward()
-            optimizer.step()
+        try:
+            for data in tqdm(dataset['train']):
+                predict = model(data)
+                loss = loss_function(predict, data.y.cuda())
+                loss.backward()
+                optimizer.step()          
+        except:
+            with open(os.path.join(args.raw_data, 'error.txt'), 'a') as f:
+                f.write(data.name + '\n')
 
-        _ , f1, acc = evaluate_loss(model, loss_function, dataset['vaild'].dataset)
+        _ , f1, acc = evaluate_loss(model, loss_function, dataset['test'])
         with open(save_path + '-acc-' + str(acc) + '-f1-' + str(f1) + 'model.ckpt', 'wb') as f:
             torch.save(model.state_dict(), f)
 
-    acc, pre, recall, f1 = evaluate_metrics(model, loss_function, dataset['test'].dataset)
+    acc, pre, recall, f1 = evaluate_metrics(model, loss_function, dataset['test'])
     with open(save_path + '-acc-' + str(acc) + '-f1-' + str(f1) + '-lastmodel.ckpt', 'wb') as f:
         torch.save(model.state_dict(), f)

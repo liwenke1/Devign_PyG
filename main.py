@@ -1,6 +1,8 @@
+import warnings
+warnings.filterwarnings("ignore")
 import argparse
 import torch
-from torch.nn import BCELoss
+import torch.nn.functional as F
 from torch.optim import Adam
 
 from log import Mylogging
@@ -13,7 +15,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--raw_data', type=str, help='Input Directory of the parser',
-                        default='/home/survey_devign/explain_experiments/all_files.txt')
+                        default='/home/survey_devign/explain_experiments')
     parser.add_argument('--pro_data_dir', type=str, help='Input Directory of the parser',
                         default='/home/Devign_PyG/dataset')
     parser.add_argument('--model_dir', type=str, help='Input Directory of the parser',
@@ -23,8 +25,8 @@ def parse_args():
     parser.add_argument('--graph_embed_size', type=int, help='Size of the Graph Embedding', default=200)
     parser.add_argument('--num_steps', type=int, help='Number of steps in GGNN', default=6)
     parser.add_argument('--batch_size', type=int, help='Batch Size for training', default=8)
-    parser.add_argument('--max_edge_types', type=int, help='Batch Size for training', default=3)
-    parser.add_argument('--epochs', type=int, help='Batch Size for training', default=10)
+    parser.add_argument('--max_edge_types', type=int, help='Batch Size for training', default=2)
+    parser.add_argument('--epochs', type=int, help='Batch Size for training', default=2)
     args = parser.parse_args()
     return args
 
@@ -42,10 +44,10 @@ if __name__ == '__main__':
                         num_steps=args.num_steps, max_edge_types=args.max_edge_types)
 
     Mylogger.info('#' * 100)
-    loss_function = BCELoss(reduction='sum')
+    loss_function = F.cross_entropy
     optim = Adam(model.parameters(), lr=0.0001, weight_decay=0.001)
     Mylogger.info(f'batch_size:{args.batch_size}')
     Mylogger.info('lr:0.0001')
     Mylogger.info('weight_decay:0.001')
-    train(model=model, dataset=loader, loss_function=loss_function, 
-            optimizer=optim, save_path=args.model_dir + '/batch-' + str(args.batch_size), epochs=args.epochs) 
+    train(model=model, dataset=loader, loss_function=loss_function, optimizer=optim, 
+            args=args, save_path=args.model_dir + '/batch-' + str(args.batch_size), epochs=args.epochs) 

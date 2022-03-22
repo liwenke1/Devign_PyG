@@ -1,11 +1,17 @@
+import os
 import json
-
 import torch
 from log import Mylogging
 from torch_geometric.data import Data, InMemoryDataset, DataLoader
 from torch.utils.data import random_split
 
 Mylogger = Mylogging()
+
+def dump_txt(dataset, filename):
+    with open(filename, 'w') as f:
+        for data in dataset:
+            f.write(data.name + '\n')
+
 
 def read_json(filename):
     with open(filename,'r') as f:
@@ -23,9 +29,7 @@ def read_json(filename):
         edge_attr_list.append([edge[1]])
     edge_attr = torch.tensor(edge_attr_list,dtype=torch.float)
 
-    y=[]
-    y.append([file['target']])
-    y=torch.tensor(y,dtype=torch.float)
+    y=torch.tensor([file['target']],dtype=torch.long)
     
     data=Data(x=x,edge_index=edge_index,edge_attr=edge_attr,y=y,name=filename)
     return data
@@ -49,6 +53,9 @@ def get_dataloader(dataset, args):
     dataloader['train'] = DataLoader(train, batch_size=args.batch_size, shuffle=True)
     dataloader['vaild'] = DataLoader(vaild, batch_size=args.batch_size, shuffle=False)
     dataloader['test'] = DataLoader(test, batch_size=args.batch_size, shuffle=False)
+    dump_txt(dataloader['train'].dataset, os.path.join(args.raw_data, 'train.txt'))
+    dump_txt(dataloader['vaild'].dataset, os.path.join(args.raw_data, 'vaild.txt'))
+    dump_txt(dataloader['test'].dataset, os.path.join(args.raw_data, 'test.txt'))
     return dataloader
 
 class Devign(InMemoryDataset):
