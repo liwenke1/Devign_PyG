@@ -1,7 +1,8 @@
 import torch
 from torch_geometric.nn import GatedGraphConv
 from torch import nn
-import torch.nn.functional as F
+import torch.nn.functional as f
+import sys
 
 class DevignModel(nn.Module):
     def __init__(self, input_dim, output_dim, max_edge_types, num_steps):
@@ -52,28 +53,28 @@ class DevignModel(nn.Module):
         h_i = self.de_batchify_graphs(output, input.batch)
         c_i = torch.cat((h_i, x_i), dim=-1)
         Y_1 = self.maxpool1(
-            F.relu(
+            f.relu(
                 self.batchnorm_1d(
                     self.conv_l1(h_i.transpose(1, 2))
                 )
             )
         )
         Y_2 = self.maxpool2(
-            F.relu(
+            f.relu(
                 self.batchnorm_1d(
                     self.conv_l2(Y_1)
                 )
             )
         ).transpose(1, 2)
         Z_1 = self.maxpool1_for_concat(
-            F.relu(
+            f.relu(
                 self.batchnorm_1d_for_concat(
                     self.conv_l1_for_concat(c_i.transpose(1, 2))
                 )
             )
         )
         Z_2 = self.maxpool2_for_concat(
-            F.relu(
+            f.relu(
                 self.batchnorm_1d_for_concat(   
                     self.conv_l2_for_concat(Z_1)
                 )
@@ -82,3 +83,5 @@ class DevignModel(nn.Module):
         before_avg = torch.mul(self.mlp_y(Y_2), self.mlp_z(Z_2))
         avg = before_avg.mean(dim=1)
         return avg
+        result = self.sigmoid(avg).squeeze(dim=-1)
+        return result

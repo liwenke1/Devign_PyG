@@ -3,6 +3,7 @@ warnings.filterwarnings("ignore")
 import argparse
 import torch
 import torch.nn.functional as F
+from torch.nn import BCELoss
 from torch.optim import Adam
 
 from log import Mylogging
@@ -26,7 +27,7 @@ def parse_args():
     parser.add_argument('--num_steps', type=int, help='Number of steps in GGNN', default=6)
     parser.add_argument('--batch_size', type=int, help='Batch Size for training', default=8)
     parser.add_argument('--max_edge_types', type=int, help='Batch Size for training', default=2)
-    parser.add_argument('--epochs', type=int, help='Batch Size for training', default=2)
+    parser.add_argument('--epochs', type=int, help='Batch Size for training', default=10)
     args = parser.parse_args()
     return args
 
@@ -45,9 +46,9 @@ if __name__ == '__main__':
 
     Mylogger.info('#' * 100)
     loss_function = F.cross_entropy
-    optim = Adam(model.parameters(), lr=0.0001, weight_decay=0.001)
+    optim = Adam(model.parameters(), lr=1e-4, weight_decay=1.3e-6)
     Mylogger.info(f'batch_size:{args.batch_size}')
-    Mylogger.info('lr:0.0001')
-    Mylogger.info('weight_decay:0.001')
+    Mylogger.info('lr:1e-4')
+    Mylogger.info('weight_decay:1.3e-6')
     train(model=model, dataset=loader, loss_function=loss_function, optimizer=optim, 
             args=args, save_path=args.model_dir + '/batch-' + str(args.batch_size), epochs=args.epochs) 

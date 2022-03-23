@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 from log import Mylogging
 
@@ -21,7 +22,7 @@ def evaluate_loss(model, loss_function, dataset):
         all_predictions, all_targets = [], []
         for data in tqdm(dataset):
             predictions = model(data)
-            loss = loss_function(predictions, data.y.cuda())
+            loss = loss_function(predictions, data.y.long().cuda())
             _loss.append(loss.detach().cpu().item())
             predictions = predictions.detach().cpu()
             if predictions.ndim == 2:
@@ -48,7 +49,7 @@ def evaluate_metrics(model, loss_function, dataset):
         all_predictions, all_targets = [], []
         for data in tqdm(dataset):
             predictions = model(data)
-            loss = loss_function(predictions, data.y.cuda())
+            loss = loss_function(predictions, data.y.long().cuda())
             _loss.append(loss.detach().cpu().item())
             predictions = predictions.detach().cpu()
             if predictions.ndim == 2:
@@ -77,17 +78,19 @@ def train(model, dataset, loss_function, optimizer, args, save_path, epochs):
         try:
             for data in tqdm(dataset['train']):
                 predict = model(data)
-                loss = loss_function(predict, data.y.cuda())
+                loss = loss_function(predict, data.y.long().cuda())
+                optimizer.zero_grad()
                 loss.backward()
-                optimizer.step()          
+                optimizer.step()
         except:
             with open(os.path.join(args.raw_data, 'error.txt'), 'a') as f:
-                f.write(data.name + '\n')
-
+                for name in data.name:
+                    f.write(name + '\n')
+        
         _ , f1, acc = evaluate_loss(model, loss_function, dataset['test'])
-        with open(save_path + '-acc-' + str(acc) + '-f1-' + str(f1) + 'model.ckpt', 'wb') as f:
+        with open(save_path + '-acc-' + str(acc) + '-f1-' + str(f1) + '-model.ckpt', 'wb') as f:
             torch.save(model.state_dict(), f)
 
     acc, pre, recall, f1 = evaluate_metrics(model, loss_function, dataset['test'])
-    with open(save_path + '-acc-' + str(acc) + '-f1-' + str(f1) + '-lastmodel.ckpt', 'wb') as f:
+    with open(save_path + '-acc-' + str(acc) + '-f1-' + str(f1) + '-model.ckpt', 'wb') as f:
         torch.save(model.state_dict(), f)

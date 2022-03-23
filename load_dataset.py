@@ -29,7 +29,7 @@ def read_json(filename):
         edge_attr_list.append([edge[1]])
     edge_attr = torch.tensor(edge_attr_list,dtype=torch.float)
 
-    y=torch.tensor([file['target']],dtype=torch.long)
+    y=torch.tensor([file['target']],dtype=torch.float)
     
     data=Data(x=x,edge_index=edge_index,edge_attr=edge_attr,y=y,name=filename)
     return data
